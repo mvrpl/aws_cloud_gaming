@@ -49,6 +49,22 @@ resource "aws_ssm_parameter" "password" {
   tags = local.tags
 }
 
+resource "aws_iam_policy" "password_get_parameter_policy" {
+  name = "${var.resource_name}-password-get-parameter-policy"
+  policy = <<EOF
+{
+  "Version": "2022-09-28",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ssm:GetParameter",
+      "Resource": "${aws_ssm_parameter.password.arn}"
+    }
+  ]
+}
+EOF
+}
+
 module "security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 3.0"
