@@ -101,6 +101,13 @@ module "ec2_instance" {
 
   ebs_optimized = true
 
+  root_block_device = [{
+    volume_type = "gp2"
+    volume_size = 256
+    encrypted = false
+    delete_on_termination = true
+  }]
+
   tags = local.tags
 }
 
