@@ -1,17 +1,23 @@
 locals {
   name = "cloud-game"
   region = "sa-east-1"
-  access_key_id = "ACCESS_KEY"
-  secret_key_id = "SECRET_KEY"
   tags = {
     Terraform = "true"
     Environment = "game"
   }
 }
 
+variable "AWS_ACCESS_KEY_ID" {
+  type = string
+}
+
+variable "AWS_SECRET_KEY_ID" {
+  type = string
+}
+
 provider "aws" {
-    access_key = local.access_key_id
-    secret_key = local.secret_key_id
+    access_key = var.AWS_ACCESS_KEY_ID
+    secret_key = var.AWS_SECRET_KEY_ID
     region = local.region
 }
 
@@ -50,10 +56,10 @@ resource "aws_ssm_parameter" "password" {
 }
 
 resource "aws_iam_policy" "password_get_parameter_policy" {
-  name = "${var.resource_name}-password-get-parameter-policy"
+  name = "${local.name}-password-get-parameter-policy"
   policy = <<EOF
 {
-  "Version": "2022-09-28",
+  "Version": "1.0",
   "Statement": [
     {
       "Effect": "Allow",
