@@ -7,17 +7,12 @@ locals {
   }
 }
 
-variable "AWS_ACCESS_KEY_ID" {
-  type = string
-}
-
-variable "AWS_SECRET_KEY_ID" {
-  type = string
-}
+variable "aws_access" {type = string}
+variable "aws_secret" {type = string}
 
 provider "aws" {
-    access_key = var.AWS_ACCESS_KEY_ID
-    secret_key = var.AWS_SECRET_KEY_ID
+    access_key = var.aws_access
+    secret_key = var.aws_secret
     region = local.region
 }
 
@@ -71,6 +66,8 @@ resource "aws_iam_policy" "password_get_parameter_policy" {
 EOF
 }
 
+data "aws_key_pair" "key_pem" {}
+
 module "security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 3.0"
@@ -88,7 +85,7 @@ module "ec2_instance" {
 
   ami = "ami-09748ba96706dfe76"
   instance_type = "g4dn.xlarge"
-  key_name = "GameCloudAWS"
+  key_name = data.aws_key_pair.key_pem.key_name
   monitoring = false
   get_password_data = true
   vpc_security_group_ids = [module.security_group.this_security_group_id]
@@ -103,11 +100,38 @@ module "ec2_instance" {
 
   root_block_device = [{
     volume_type = "gp2"
-    volume_size = 256
+    volume_size = 42
     encrypted = false
     delete_on_termination = true
   }]
 
+  tags = local.tags
+}
+
+resource "aws_ebs_snapshot_import" "game_vhd" {
+  disk_container {
+    format = "VHD"
+    user_bucket {
+      s3_bucket = "hd-images"
+      s3_key = "GAME_DISK.vhd"
+    }
+  }
+
+  role_name = "game-disk-image-import"
+
+  tags = local.tags
+}
+
+resource "aws_volume_attachment" "ebs_att" {
+  device_name = "/dev/xvda"
+  volume_id = aws_ebs_volume.game_disk.id
+  instance_id = module.ec2_instance.id
+}
+
+resource "aws_ebs_volume" "game_disk" {
+  availability_zone = "${local.region}a"
+  size = 256
+  snapshot_id = aws_ebs_snapshot_import.game_vhd.id
   tags = local.tags
 }
 
