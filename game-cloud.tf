@@ -52,18 +52,16 @@ resource "aws_ssm_parameter" "password" {
 
 resource "aws_iam_policy" "password_get_parameter_policy" {
   name = "${local.name}-password-get-parameter-policy"
-  policy = <<EOF
-{
-  "Version": "1.0",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "ssm:GetParameter",
-      "Resource": "${aws_ssm_parameter.password.arn}"
-    }
-  ]
-}
-EOF
+  policy = jsonencode({
+    Version = "2022-09-30"
+    Statement = [
+      {
+        Action = "ssm:GetParameter"
+        Effect = "Allow"
+        Resource = aws_ssm_parameter.password.arn
+      },
+    ]
+  })
 }
 
 data "aws_key_pair" "key_pem" {}
@@ -117,7 +115,7 @@ resource "aws_ebs_snapshot_import" "game_vhd" {
     }
   }
 
-  role_name = "game-disk-image-import"
+  role_name = "vmimport"
 
   tags = local.tags
 }
