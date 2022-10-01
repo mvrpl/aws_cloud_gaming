@@ -1,6 +1,7 @@
 locals {
   name = "cloud-game"
   region = "sa-east-1"
+  bucket_name_vhd = "import-to-ec2-hds"
   tags = {
     Terraform = "true"
     Environment = "game"
@@ -50,16 +51,73 @@ resource "aws_ssm_parameter" "password" {
   tags = local.tags
 }
 
+resource "aws_iam_role" "windows_instance_role" {
+  name = "${local.name}-instance-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Effect = "Allow"
+        Sid = ""
+      }
+    ]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role" "vhd_import_role" {
+  name = "${local.name}-vhd-import-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "vmie.amazonaws.com"
+        }
+        Effect = "Allow"
+        Condition = {
+          StringEquals = {
+            "sts:Externalid" = "vmimport"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "vhd_import_policy_attachment" {
+  role = aws_iam_role.vhd_import_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/VMImportExportRoleForAWSConnector"
+}
+
+resource "aws_iam_role_policy_attachment" "password_get_parameter_policy_attachment" {
+  role = aws_iam_role.windows_instance_role.name
+  policy_arn = aws_iam_policy.password_get_parameter_policy.arn
+}
+
+resource "aws_iam_instance_profile" "windows_instance_profile" {
+  name = "${local.name}-instance-profile"
+  role = aws_iam_role.windows_instance_role.name
+}
+
 resource "aws_iam_policy" "password_get_parameter_policy" {
   name = "${local.name}-password-get-parameter-policy"
   policy = jsonencode({
-    Version = "2022-09-30"
+    Version = "2012-10-17"
     Statement = [
       {
         Action = "ssm:GetParameter"
         Effect = "Allow"
         Resource = aws_ssm_parameter.password.arn
-      },
+      }
     ]
   })
 }
@@ -110,12 +168,12 @@ resource "aws_ebs_snapshot_import" "game_vhd" {
   disk_container {
     format = "VHD"
     user_bucket {
-      s3_bucket = "hd-images"
+      s3_bucket = local.bucket_name_vhd
       s3_key = "GAME_DISK.vhd"
     }
   }
 
-  role_name = "vmimport"
+  role_name = aws_iam_role.vhd_import_role.name
 
   tags = local.tags
 }
