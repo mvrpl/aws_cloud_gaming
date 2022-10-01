@@ -2,5 +2,6 @@
 
 export TF_VAR_aws_access="$1"
 export TF_VAR_aws_secret="$2"
+export TF_VAR_windows_password="$3"
 
 terraform init && terraform plan && terraform apply

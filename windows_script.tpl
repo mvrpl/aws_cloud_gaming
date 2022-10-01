@@ -1,4 +1,3 @@
 <powershell>
-$password = (Get-SSMParameter -WithDecryption $true -Name '${password_ssm_parameter}').Value
-net user Administrator "$password"
+net user Administrator "${password_parameter}"
 </powershell>
