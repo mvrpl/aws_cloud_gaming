@@ -28,6 +28,16 @@ resource "aws_security_group_rule" "rdp_ingress" {
   security_group_id = module.security_group.this_security_group_id
 }
 
+resource "aws_security_group_rule" "sg_egress" {
+  type = "egress"
+  description = "Allow internet access"
+  from_port = 0
+  to_port = 0
+  protocol = "-1"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.security_group.this_security_group_id
+}
+
 resource "aws_iam_role" "windows_instance_role" {
   name = "${local.name}-instance-role"
   assume_role_policy = jsonencode({
