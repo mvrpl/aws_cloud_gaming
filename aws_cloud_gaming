@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export TF_VAR_aws_access="$1"
-export TF_VAR_aws_secret="$2"
-export TF_VAR_windows_password="$3"
+export TF_VAR_aws_access="$2"
+export TF_VAR_aws_secret="$3"
+export TF_VAR_windows_password="$4"
 
-terraform init && terraform plan && terraform apply
+terraform init && terraform plan && terraform $1
